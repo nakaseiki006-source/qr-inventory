@@ -93,12 +93,8 @@
 
 <body>
 
-<h2>棚卸入力システム</h2>
+<h2>ダイナマーク棚卸QR入力</h2>
 
-
-<!-- ==================================================
-     カメラ起動ボタン
-================================================== -->
 
 <button id="startButton"
         onclick="startCamera()">
@@ -106,25 +102,13 @@
 </button>
 
 
-<!-- ==================================================
-     QRカメラ
-================================================== -->
-
 <div id="reader"></div>
 
-
-<!-- ==================================================
-     メッセージ
-================================================== -->
 
 <div id="result">
   QRコードを読み取ってください
 </div>
 
-
-<!-- ==================================================
-     品名
-================================================== -->
 
 <div class="label">
   品名
@@ -135,10 +119,6 @@
 </div>
 
 
-<!-- ==================================================
-     品番
-================================================== -->
-
 <div class="label">
   品番
 </div>
@@ -147,10 +127,6 @@
      class="display">
 </div>
 
-
-<!-- ==================================================
-     数量
-================================================== -->
 
 <div class="label">
   数量
@@ -165,19 +141,11 @@
 >
 
 
-<!-- ==================================================
-     登録ボタン
-================================================== -->
-
 <button id="saveButton"
         onclick="saveData()">
   登録
 </button>
 
-
-<!-- ==================================================
-     キャンセルボタン
-================================================== -->
 
 <button id="cancelButton"
         onclick="cancelInput()">
@@ -220,7 +188,6 @@ async function startCamera() {
     document.getElementById("result");
 
 
-  // すでにカメラが動いていたら何もしない
   if (cameraRunning) {
     return;
   }
@@ -228,16 +195,13 @@ async function startCamera() {
 
   button.disabled = true;
 
+
   result.innerText =
     "カメラを起動しています…";
 
 
   try {
 
-
-    // ----------------------------------------------
-    // 古いカメラインスタンスがあれば破棄
-    // ----------------------------------------------
 
     if (html5QrCode) {
 
@@ -248,24 +212,16 @@ async function startCamera() {
       }
       catch (e) {
 
-        // 無視
       }
 
       html5QrCode = null;
+
     }
 
-
-    // ----------------------------------------------
-    // 新しいQRカメラを作成
-    // ----------------------------------------------
 
     html5QrCode =
       new Html5Qrcode("reader");
 
-
-    // ----------------------------------------------
-    // カメラ開始
-    // ----------------------------------------------
 
     await html5QrCode.start(
 
@@ -286,8 +242,6 @@ async function startCamera() {
 
       function(errorMessage) {
 
-        // QR読み取り失敗は表示しない
-
       }
 
     );
@@ -306,6 +260,7 @@ async function startCamera() {
   catch (error) {
 
     console.log(error);
+
 
     cameraRunning = false;
 
@@ -371,212 +326,128 @@ async function onScanSuccess(decodedText) {
   }
 
 
-  // ----------------------------------------------
-  // 読み取りを停止
-  // ----------------------------------------------
-
   scanning = false;
 
-
-  // ----------------------------------------------
-  // カメラそのものを停止
-  // ----------------------------------------------
 
   await stopCamera();
 
 
-  let code =
-    decodedText.trim();
+  let code = "";
+
+  let partName = "";
 
 
   // ==================================================
-  // QRがURLの場合
-  // ?id=品番 を取得
+  // QRの内容を解析
   // ==================================================
 
   try {
+
 
     const url =
       new URL(decodedText);
 
 
-    const id =
-      url.searchParams.get("id");
+    code =
+      url.searchParams.get("code") || "";
 
 
-    if (id) {
+    partName =
+      url.searchParams.get("name") || "";
 
-      code = id;
-
-    }
 
   }
   catch (e) {
 
-    // URLでなければそのまま品番
+
+    // ==================================================
+    // URLではない場合
+    // ==================================================
+
+    code =
+      decodedText.trim();
 
   }
 
 
   // ==================================================
-  // 画面表示
+  // URLのパラメータをデコード
+  // ==================================================
+
+  try {
+
+    partName =
+      decodeURIComponent(
+        partName
+      );
+
+  }
+  catch (e) {
+
+  }
+
+
+  // ==================================================
+  // 品番表示
   // ==================================================
 
   document.getElementById("partNo")
-    .innerText = code;
+    .innerText =
+    code;
 
+
+  // ==================================================
+  // 品名表示
+  // ==================================================
 
   document.getElementById("partName")
-    .innerText = "品名を検索中…";
+    .innerText =
+    partName;
 
 
-  document.getElementById("result")
-    .innerText = "読み取り成功";
-
+  // ==================================================
+  // 数量クリア
+  // ==================================================
 
   document.getElementById("quantity")
     .value = "";
 
 
   // ==================================================
-  // 品名検索
+  // 読み取り結果
   // ==================================================
 
-  lookupPart(code);
+  if (
+    code !== "" &&
+    partName !== ""
+  ) {
 
-}
-
-
-// ==================================================
-// 品名検索
-// ==================================================
-
-function lookupPart(code) {
+    document.getElementById("result")
+      .innerText =
+      "品番・品名を確認して数量を入力してください";
 
 
-  const callbackName =
-    "jsonp_" + Date.now();
+    document.getElementById("quantity")
+      .focus();
+
+  }
+  else {
+
+    document.getElementById("result")
+      .innerText =
+      "QRコードの内容を確認できません";
 
 
-  window[callbackName] =
-    function(data) {
+    setTimeout(
+      function() {
 
-
-      delete window[callbackName];
-
-
-      const script =
-        document.getElementById(callbackName);
-
-
-      if (script) {
-
-        script.remove();
-
-      }
-
-
-      // ==================================================
-      // 品番が見つかった
-      // ==================================================
-
-      if (data.ok) {
-
-
-        document.getElementById("partName")
-          .innerText =
-            data.partName;
-
-
-        document.getElementById("result")
-          .innerText =
-            "品番を確認して数量を入力してください";
-
-
-        document.getElementById("quantity")
-          .focus();
-
-
-      }
-
-
-      // ==================================================
-      // 品番が見つからない
-      // ==================================================
-
-      else {
-
-
-        document.getElementById("partName")
-          .innerText =
-            "品名が見つかりません";
-
-
-        document.getElementById("result")
-          .innerText =
-            "マスタに品番がありません";
-
-
-        // カメラ再開
         startCamera();
 
-      }
+      },
+      1500
+    );
 
-    };
-
-
-  // ==================================================
-  // JSONP用script
-  // ==================================================
-
-  const script =
-    document.createElement("script");
-
-
-  script.id =
-    callbackName;
-
-
-  script.src =
-    GAS_URL +
-    "?api=lookup" +
-    "&id=" +
-    encodeURIComponent(code) +
-    "&callback=" +
-    callbackName;
-
-
-  // ==================================================
-  // 通信エラー
-  // ==================================================
-
-  script.onerror =
-    function() {
-
-
-      delete window[callbackName];
-
-
-      script.remove();
-
-
-      document.getElementById("partName")
-        .innerText =
-        "検索エラー";
-
-
-      document.getElementById("result")
-        .innerText =
-        "Googleスプレッドシートに接続できません";
-
-
-      // カメラ再開
-      startCamera();
-
-    };
-
-
-  document.body.appendChild(script);
+  }
 
 }
 
@@ -603,14 +474,21 @@ function saveData() {
       .value.trim();
 
 
-  // ==================================================
-  // 入力チェック
-  // ==================================================
-
   if (code === "") {
 
     alert(
       "先にQRコードを読み取ってください"
+    );
+
+    return;
+
+  }
+
+
+  if (partName === "") {
+
+    alert(
+      "品名がありません"
     );
 
     return;
@@ -639,10 +517,6 @@ function saveData() {
 
   }
 
-
-  // ==================================================
-  // ボタン無効化
-  // ==================================================
 
   const saveButton =
     document.getElementById("saveButton");
@@ -725,6 +599,13 @@ function saveData() {
 
   addHiddenInput(
     form,
+    "partName",
+    partName
+  );
+
+
+  addHiddenInput(
+    form,
     "quantity",
     quantity
   );
@@ -749,10 +630,6 @@ function saveData() {
       }
 
 
-      // ----------------------------------------------
-      // 登録完了表示
-      // ----------------------------------------------
-
       document.getElementById("result")
         .innerText =
         "登録しました\n\n" +
@@ -762,10 +639,6 @@ function saveData() {
         "\n" +
         "数量：" + quantity;
 
-
-      // ----------------------------------------------
-      // 数量クリア
-      // ----------------------------------------------
 
       document.getElementById("quantity")
         .value = "";
@@ -780,22 +653,17 @@ function saveData() {
         "登録";
 
 
-      // ----------------------------------------------
-      // フォーム・iframe削除
-      // ----------------------------------------------
-
       form.remove();
 
       iframe.remove();
 
 
-      // ----------------------------------------------
-      // 3秒後に次のQRへ
-      // ----------------------------------------------
+      // ==================================================
+      // 3秒後に次のQR
+      // ==================================================
 
       setTimeout(
         function() {
-
 
           document.getElementById("result")
             .innerText =
@@ -804,9 +672,8 @@ function saveData() {
 
           startCamera();
 
-
         },
-        3000
+        2000
       );
 
     };
@@ -814,10 +681,6 @@ function saveData() {
 
   submitted = true;
 
-
-  // ==================================================
-  // 送信
-  // ==================================================
 
   form.submit();
 
@@ -843,17 +706,13 @@ function cancelInput() {
     document.getElementById("result");
 
 
-  // ==================================================
-  // ボタン無効化
-  // ==================================================
-
   cancelButton.disabled = true;
 
   saveButton.disabled = true;
 
 
   // ==================================================
-  // 入力内容クリア
+  // 内容クリア
   // ==================================================
 
   document.getElementById("partName")
@@ -867,10 +726,6 @@ function cancelInput() {
   document.getElementById("quantity")
     .value = "";
 
-
-  // ==================================================
-  // キャンセル表示
-  // ==================================================
 
   result.innerText =
     "キャンセルしました";

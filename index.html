@@ -8,7 +8,7 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-  <title>ダイナマーク棚卸QR入力</title>
+  <title>棚卸入力システム</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -75,6 +75,10 @@
       background: #999;
     }
 
+    #cancelButton {
+      background: #777;
+    }
+
     #result {
       text-align: center;
       margin-top: 15px;
@@ -89,18 +93,38 @@
 
 <body>
 
-<h2>ダイナマーク棚卸QR入力</h2>
+<h2>棚卸入力システム</h2>
+
+
+<!-- ==================================================
+     カメラ起動ボタン
+================================================== -->
 
 <button id="startButton"
         onclick="startCamera()">
   カメラを起動
 </button>
 
+
+<!-- ==================================================
+     QRカメラ
+================================================== -->
+
 <div id="reader"></div>
+
+
+<!-- ==================================================
+     メッセージ
+================================================== -->
 
 <div id="result">
   QRコードを読み取ってください
 </div>
+
+
+<!-- ==================================================
+     品名
+================================================== -->
 
 <div class="label">
   品名
@@ -110,6 +134,11 @@
      class="display">
 </div>
 
+
+<!-- ==================================================
+     品番
+================================================== -->
+
 <div class="label">
   品番
 </div>
@@ -117,6 +146,11 @@
 <div id="partNo"
      class="display">
 </div>
+
+
+<!-- ==================================================
+     数量
+================================================== -->
 
 <div class="label">
   数量
@@ -130,13 +164,29 @@
   placeholder="数量を入力してください"
 >
 
+
+<!-- ==================================================
+     登録ボタン
+================================================== -->
+
 <button id="saveButton"
         onclick="saveData()">
   登録
 </button>
 
 
+<!-- ==================================================
+     キャンセルボタン
+================================================== -->
+
+<button id="cancelButton"
+        onclick="cancelInput()">
+  キャンセル
+</button>
+
+
 <script>
+
 
 // ==================================================
 // Google Apps Script WebアプリURL
@@ -151,7 +201,9 @@ const GAS_URL =
 // ==================================================
 
 let html5QrCode = null;
+
 let scanning = false;
+
 let cameraRunning = false;
 
 
@@ -167,18 +219,26 @@ async function startCamera() {
   const result =
     document.getElementById("result");
 
+
+  // すでにカメラが動いていたら何もしない
   if (cameraRunning) {
     return;
   }
+
 
   button.disabled = true;
 
   result.innerText =
     "カメラを起動しています…";
 
+
   try {
 
-    // 古いインスタンスがあれば作り直す
+
+    // ----------------------------------------------
+    // 古いカメラインスタンスがあれば破棄
+    // ----------------------------------------------
+
     if (html5QrCode) {
 
       try {
@@ -187,37 +247,60 @@ async function startCamera() {
 
       }
       catch (e) {
+
         // 無視
       }
 
       html5QrCode = null;
     }
 
+
+    // ----------------------------------------------
+    // 新しいQRカメラを作成
+    // ----------------------------------------------
+
     html5QrCode =
       new Html5Qrcode("reader");
 
+
+    // ----------------------------------------------
+    // カメラ開始
+    // ----------------------------------------------
+
     await html5QrCode.start(
+
       {
         facingMode: "environment"
       },
+
       {
         fps: 10,
+
         qrbox: {
           width: 250,
           height: 250
         }
       },
+
       onScanSuccess,
+
       function(errorMessage) {
-        // 読み取り失敗は表示しない
+
+        // QR読み取り失敗は表示しない
+
       }
+
     );
 
+
     cameraRunning = true;
+
     scanning = true;
+
 
     result.innerText =
       "QRコードをカメラにかざしてください";
+
 
   }
   catch (error) {
@@ -225,13 +308,18 @@ async function startCamera() {
     console.log(error);
 
     cameraRunning = false;
+
     scanning = false;
+
 
     result.innerText =
       "カメラを起動できませんでした";
 
+
     button.disabled = false;
+
   }
+
 }
 
 
@@ -240,6 +328,7 @@ async function startCamera() {
 // ==================================================
 
 async function stopCamera() {
+
 
   if (
     html5QrCode &&
@@ -262,8 +351,11 @@ async function stopCamera() {
 
   }
 
+
   cameraRunning = false;
+
   scanning = false;
+
 }
 
 
@@ -273,15 +365,25 @@ async function stopCamera() {
 
 async function onScanSuccess(decodedText) {
 
+
   if (!scanning) {
     return;
   }
 
-  // まず読み取りを止める
+
+  // ----------------------------------------------
+  // 読み取りを停止
+  // ----------------------------------------------
+
   scanning = false;
 
-  // カメラそのものも停止
+
+  // ----------------------------------------------
+  // カメラそのものを停止
+  // ----------------------------------------------
+
   await stopCamera();
+
 
   let code =
     decodedText.trim();
@@ -297,33 +399,51 @@ async function onScanSuccess(decodedText) {
     const url =
       new URL(decodedText);
 
+
     const id =
       url.searchParams.get("id");
 
+
     if (id) {
+
       code = id;
+
     }
 
   }
   catch (e) {
 
     // URLでなければそのまま品番
+
   }
 
+
+  // ==================================================
+  // 画面表示
+  // ==================================================
 
   document.getElementById("partNo")
     .innerText = code;
 
+
   document.getElementById("partName")
     .innerText = "品名を検索中…";
+
 
   document.getElementById("result")
     .innerText = "読み取り成功";
 
+
   document.getElementById("quantity")
     .value = "";
 
+
+  // ==================================================
+  // 品名検索
+  // ==================================================
+
   lookupPart(code);
+
 }
 
 
@@ -333,57 +453,89 @@ async function onScanSuccess(decodedText) {
 
 function lookupPart(code) {
 
+
   const callbackName =
     "jsonp_" + Date.now();
+
 
   window[callbackName] =
     function(data) {
 
+
       delete window[callbackName];
+
 
       const script =
         document.getElementById(callbackName);
 
+
       if (script) {
+
         script.remove();
+
       }
 
 
+      // ==================================================
+      // 品番が見つかった
+      // ==================================================
+
       if (data.ok) {
+
 
         document.getElementById("partName")
           .innerText =
             data.partName;
 
+
         document.getElementById("result")
           .innerText =
             "品番を確認して数量を入力してください";
 
+
         document.getElementById("quantity")
           .focus();
 
+
       }
+
+
+      // ==================================================
+      // 品番が見つからない
+      // ==================================================
+
       else {
+
 
         document.getElementById("partName")
           .innerText =
             "品名が見つかりません";
 
+
         document.getElementById("result")
           .innerText =
             "マスタに品番がありません";
 
+
         // カメラ再開
         startCamera();
+
       }
+
     };
 
+
+  // ==================================================
+  // JSONP用script
+  // ==================================================
 
   const script =
     document.createElement("script");
 
+
   script.id =
     callbackName;
+
 
   script.src =
     GAS_URL +
@@ -394,27 +546,38 @@ function lookupPart(code) {
     callbackName;
 
 
+  // ==================================================
+  // 通信エラー
+  // ==================================================
+
   script.onerror =
     function() {
 
+
       delete window[callbackName];
 
+
       script.remove();
+
 
       document.getElementById("partName")
         .innerText =
         "検索エラー";
 
+
       document.getElementById("result")
         .innerText =
         "Googleスプレッドシートに接続できません";
 
+
       // カメラ再開
       startCamera();
+
     };
 
 
   document.body.appendChild(script);
+
 }
 
 
@@ -424,18 +587,25 @@ function lookupPart(code) {
 
 function saveData() {
 
+
   const code =
     document.getElementById("partNo")
       .innerText.trim();
+
 
   const partName =
     document.getElementById("partName")
       .innerText.trim();
 
+
   const quantity =
     document.getElementById("quantity")
       .value.trim();
 
+
+  // ==================================================
+  // 入力チェック
+  // ==================================================
 
   if (code === "") {
 
@@ -444,6 +614,7 @@ function saveData() {
     );
 
     return;
+
   }
 
 
@@ -454,6 +625,7 @@ function saveData() {
     );
 
     return;
+
   }
 
 
@@ -464,16 +636,30 @@ function saveData() {
     );
 
     return;
+
   }
 
 
-  const button =
+  // ==================================================
+  // ボタン無効化
+  // ==================================================
+
+  const saveButton =
     document.getElementById("saveButton");
 
-  button.disabled = true;
 
-  button.innerText =
+  const cancelButton =
+    document.getElementById("cancelButton");
+
+
+  saveButton.disabled = true;
+
+  cancelButton.disabled = true;
+
+
+  saveButton.innerText =
     "登録中…";
+
 
   document.getElementById("result")
     .innerText =
@@ -487,11 +673,14 @@ function saveData() {
   const iframe =
     document.createElement("iframe");
 
+
   iframe.name =
     "saveFrame_" + Date.now();
 
+
   iframe.style.display =
     "none";
+
 
   document.body.appendChild(iframe);
 
@@ -503,14 +692,18 @@ function saveData() {
   const form =
     document.createElement("form");
 
+
   form.method =
     "POST";
+
 
   form.action =
     GAS_URL;
 
+
   form.target =
     iframe.name;
+
 
   form.style.display =
     "none";
@@ -522,11 +715,13 @@ function saveData() {
     "save"
   );
 
+
   addHiddenInput(
     form,
     "code",
     code
   );
+
 
   addHiddenInput(
     form,
@@ -541,13 +736,22 @@ function saveData() {
   let submitted = false;
 
 
+  // ==================================================
+  // 登録完了
+  // ==================================================
+
   iframe.onload =
     function() {
+
 
       if (!submitted) {
         return;
       }
 
+
+      // ----------------------------------------------
+      // 登録完了表示
+      // ----------------------------------------------
 
       document.getElementById("result")
         .innerText =
@@ -559,35 +763,50 @@ function saveData() {
         "数量：" + quantity;
 
 
+      // ----------------------------------------------
+      // 数量クリア
+      // ----------------------------------------------
+
       document.getElementById("quantity")
         .value = "";
 
 
-      button.disabled = false;
+      saveButton.disabled = false;
 
-      button.innerText =
+      cancelButton.disabled = false;
+
+
+      saveButton.innerText =
         "登録";
 
 
+      // ----------------------------------------------
+      // フォーム・iframe削除
+      // ----------------------------------------------
+
       form.remove();
+
       iframe.remove();
 
 
-      // ==================================================
-      // 少し待ってから次のQR用カメラ起動
-      // ==================================================
+      // ----------------------------------------------
+      // 3秒後に次のQRへ
+      // ----------------------------------------------
 
       setTimeout(
         function() {
+
 
           document.getElementById("result")
             .innerText =
             "次のQRコードを読み取ってください";
 
+
           startCamera();
 
+
         },
-        2000
+        3000
       );
 
     };
@@ -595,7 +814,92 @@ function saveData() {
 
   submitted = true;
 
+
+  // ==================================================
+  // 送信
+  // ==================================================
+
   form.submit();
+
+}
+
+
+// ==================================================
+// キャンセル
+// ==================================================
+
+function cancelInput() {
+
+
+  const cancelButton =
+    document.getElementById("cancelButton");
+
+
+  const saveButton =
+    document.getElementById("saveButton");
+
+
+  const result =
+    document.getElementById("result");
+
+
+  // ==================================================
+  // ボタン無効化
+  // ==================================================
+
+  cancelButton.disabled = true;
+
+  saveButton.disabled = true;
+
+
+  // ==================================================
+  // 入力内容クリア
+  // ==================================================
+
+  document.getElementById("partName")
+    .innerText = "";
+
+
+  document.getElementById("partNo")
+    .innerText = "";
+
+
+  document.getElementById("quantity")
+    .value = "";
+
+
+  // ==================================================
+  // キャンセル表示
+  // ==================================================
+
+  result.innerText =
+    "キャンセルしました";
+
+
+  // ==================================================
+  // 1.5秒後にカメラ再起動
+  // ==================================================
+
+  setTimeout(
+    function() {
+
+
+      cancelButton.disabled = false;
+
+      saveButton.disabled = false;
+
+
+      result.innerText =
+        "次のQRコードを読み取ってください";
+
+
+      startCamera();
+
+
+    },
+    1500
+  );
+
 }
 
 
@@ -609,22 +913,29 @@ function addHiddenInput(
   value
 ) {
 
+
   const input =
     document.createElement("input");
+
 
   input.type =
     "hidden";
 
+
   input.name =
     name;
+
 
   input.value =
     value;
 
+
   form.appendChild(input);
+
 }
 
 </script>
 
 </body>
+
 </html>

@@ -79,6 +79,11 @@
       background: #777;
     }
 
+    #resetButton {
+      background: #dc3545;
+      margin-top: 30px;
+    }
+
     #result {
       text-align: center;
       margin-top: 15px;
@@ -91,27 +96,51 @@
 
 </head>
 
+
 <body>
+
 
 <h2>ダイナマーク棚卸QR入力</h2>
 
 
+<!-- ============================== -->
+<!-- カメラ起動 -->
+<!-- ============================== -->
+
 <button id="startButton"
         onclick="startCamera()">
+
   カメラを起動
+
 </button>
 
+
+<!-- ============================== -->
+<!-- QRカメラ -->
+<!-- ============================== -->
 
 <div id="reader"></div>
 
 
+<!-- ============================== -->
+<!-- 結果表示 -->
+<!-- ============================== -->
+
 <div id="result">
+
   QRコードを読み取ってください
+
 </div>
 
 
+<!-- ============================== -->
+<!-- 品名 -->
+<!-- ============================== -->
+
 <div class="label">
+
   品名
+
 </div>
 
 <div id="partName"
@@ -119,8 +148,14 @@
 </div>
 
 
+<!-- ============================== -->
+<!-- 品番 -->
+<!-- ============================== -->
+
 <div class="label">
+
   品番
+
 </div>
 
 <div id="partNo"
@@ -128,8 +163,14 @@
 </div>
 
 
+<!-- ============================== -->
+<!-- 数量 -->
+<!-- ============================== -->
+
 <div class="label">
+
   数量
+
 </div>
 
 <input
@@ -141,15 +182,39 @@
 >
 
 
+<!-- ============================== -->
+<!-- 登録 -->
+<!-- ============================== -->
+
 <button id="saveButton"
         onclick="saveData()">
+
   登録
+
 </button>
 
 
+<!-- ============================== -->
+<!-- キャンセル -->
+<!-- ============================== -->
+
 <button id="cancelButton"
         onclick="cancelInput()">
+
   キャンセル
+
+</button>
+
+
+<!-- ============================== -->
+<!-- 棚卸リセット -->
+<!-- ============================== -->
+
+<button id="resetButton"
+        onclick="resetInventory()">
+
+  棚卸データをリセット
+
 </button>
 
 
@@ -189,7 +254,9 @@ async function startCamera() {
 
 
   if (cameraRunning) {
+
     return;
+
   }
 
 
@@ -202,6 +269,10 @@ async function startCamera() {
 
   try {
 
+
+    // ----------------------------------------
+    // 以前のカメラをクリア
+    // ----------------------------------------
 
     if (html5QrCode) {
 
@@ -219,9 +290,17 @@ async function startCamera() {
     }
 
 
+    // ----------------------------------------
+    // QRリーダー作成
+    // ----------------------------------------
+
     html5QrCode =
       new Html5Qrcode("reader");
 
+
+    // ----------------------------------------
+    // カメラ開始
+    // ----------------------------------------
 
     await html5QrCode.start(
 
@@ -236,6 +315,7 @@ async function startCamera() {
           width: 250,
           height: 250
         }
+
       },
 
       onScanSuccess,
@@ -322,7 +402,9 @@ async function onScanSuccess(decodedText) {
 
 
   if (!scanning) {
+
     return;
+
   }
 
 
@@ -343,7 +425,6 @@ async function onScanSuccess(decodedText) {
 
   try {
 
-
     const url =
       new URL(decodedText);
 
@@ -355,14 +436,11 @@ async function onScanSuccess(decodedText) {
     partName =
       url.searchParams.get("name") || "";
 
-
   }
+
   catch (e) {
 
-
-    // ==================================================
     // URLではない場合
-    // ==================================================
 
     code =
       decodedText.trim();
@@ -431,6 +509,7 @@ async function onScanSuccess(decodedText) {
       .focus();
 
   }
+
   else {
 
     document.getElementById("result")
@@ -526,9 +605,15 @@ function saveData() {
     document.getElementById("cancelButton");
 
 
+  const resetButton =
+    document.getElementById("resetButton");
+
+
   saveButton.disabled = true;
 
   cancelButton.disabled = true;
+
+  resetButton.disabled = true;
 
 
   saveButton.innerText =
@@ -556,7 +641,9 @@ function saveData() {
     "none";
 
 
-  document.body.appendChild(iframe);
+  document.body.appendChild(
+    iframe
+  );
 
 
   // ==================================================
@@ -611,7 +698,9 @@ function saveData() {
   );
 
 
-  document.body.appendChild(form);
+  document.body.appendChild(
+    form
+  );
 
 
   let submitted = false;
@@ -626,18 +715,27 @@ function saveData() {
 
 
       if (!submitted) {
+
         return;
+
       }
 
 
       document.getElementById("result")
         .innerText =
+
         "登録しました\n\n" +
-        "品名：" + partName +
+
+        "品名：" +
+        partName +
         "\n" +
-        "品番：" + code +
+
+        "品番：" +
+        code +
         "\n" +
-        "数量：" + quantity;
+
+        "数量：" +
+        quantity;
 
 
       document.getElementById("quantity")
@@ -647,6 +745,8 @@ function saveData() {
       saveButton.disabled = false;
 
       cancelButton.disabled = false;
+
+      resetButton.disabled = false;
 
 
       saveButton.innerText =
@@ -659,7 +759,7 @@ function saveData() {
 
 
       // ==================================================
-      // 3秒後に次のQR
+      // 2秒後に次のQR
       // ==================================================
 
       setTimeout(
@@ -702,6 +802,10 @@ function cancelInput() {
     document.getElementById("saveButton");
 
 
+  const resetButton =
+    document.getElementById("resetButton");
+
+
   const result =
     document.getElementById("result");
 
@@ -709,6 +813,8 @@ function cancelInput() {
   cancelButton.disabled = true;
 
   saveButton.disabled = true;
+
+  resetButton.disabled = true;
 
 
   // ==================================================
@@ -743,6 +849,8 @@ function cancelInput() {
 
       saveButton.disabled = false;
 
+      resetButton.disabled = false;
+
 
       result.innerText =
         "次のQRコードを読み取ってください";
@@ -754,6 +862,191 @@ function cancelInput() {
     },
     1500
   );
+
+}
+
+
+// ==================================================
+// 棚卸データリセット
+// ==================================================
+
+function resetInventory() {
+
+
+  // ==================================================
+  // 確認
+  // ==================================================
+
+  const answer =
+    confirm(
+
+      "⚠️ 棚卸データをすべて消去します。\n\n" +
+
+      "消去されるのは\n" +
+
+      "・棚卸数\n" +
+
+      "・登録日時\n\n" +
+
+      "品名・品番は消えません。\n\n" +
+
+      "本当にリセットしますか？"
+
+    );
+
+
+  if (!answer) {
+
+    return;
+
+  }
+
+
+  const resetButton =
+    document.getElementById("resetButton");
+
+
+  const saveButton =
+    document.getElementById("saveButton");
+
+
+  const cancelButton =
+    document.getElementById("cancelButton");
+
+
+  const result =
+    document.getElementById("result");
+
+
+  // ==================================================
+  // ボタン無効化
+  // ==================================================
+
+  resetButton.disabled = true;
+
+  saveButton.disabled = true;
+
+  cancelButton.disabled = true;
+
+
+  result.innerText =
+    "棚卸データをリセットしています…";
+
+
+  // ==================================================
+  // カメラ停止
+  // ==================================================
+
+  stopCamera();
+
+
+  // ==================================================
+  // GASへリセット要求
+  // ==================================================
+
+  const iframe =
+    document.createElement("iframe");
+
+
+  iframe.name =
+    "resetFrame_" + Date.now();
+
+
+  iframe.style.display =
+    "none";
+
+
+  document.body.appendChild(
+    iframe
+  );
+
+
+  const form =
+    document.createElement("form");
+
+
+  form.method =
+    "POST";
+
+
+  form.action =
+    GAS_URL;
+
+
+  form.target =
+    iframe.name;
+
+
+  form.style.display =
+    "none";
+
+
+  addHiddenInput(
+    form,
+    "api",
+    "reset"
+  );
+
+
+  document.body.appendChild(
+    form
+  );
+
+
+  let submitted = false;
+
+
+  iframe.onload =
+    function() {
+
+
+      if (!submitted) {
+
+        return;
+
+      }
+
+
+      result.innerText =
+        "棚卸データをリセットしました";
+
+
+      form.remove();
+
+      iframe.remove();
+
+
+      resetButton.disabled = false;
+
+      saveButton.disabled = false;
+
+      cancelButton.disabled = false;
+
+
+      // ==================================================
+      // 2秒後にカメラ再起動
+      // ==================================================
+
+      setTimeout(
+        function() {
+
+          result.innerText =
+            "次のQRコードを読み取ってください";
+
+
+          startCamera();
+
+        },
+        2000
+      );
+
+    };
+
+
+  submitted = true;
+
+
+  form.submit();
 
 }
 
@@ -785,11 +1078,15 @@ function addHiddenInput(
     value;
 
 
-  form.appendChild(input);
+  form.appendChild(
+    input
+  );
 
 }
 
+
 </script>
+
 
 </body>
 

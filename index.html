@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
 
@@ -77,21 +80,22 @@
     }
 
   </style>
+
 </head>
+
 
 <body>
 
 <h2>棚卸QR入力</h2>
 
 
-<!-- カメラ起動 -->
+<button id="startButton"
+        onclick="startCamera()">
 
-<button id="startButton" onclick="startCamera()">
   カメラを起動
+
 </button>
 
-
-<!-- QRカメラ -->
 
 <div id="reader"></div>
 
@@ -107,7 +111,8 @@
   品名
 </div>
 
-<div id="partName" class="display">
+<div id="partName"
+     class="display">
 </div>
 
 
@@ -117,7 +122,8 @@
   品番
 </div>
 
-<div id="partNo" class="display">
+<div id="partNo"
+     class="display">
 </div>
 
 
@@ -138,15 +144,28 @@
 
 <!-- 登録 -->
 
-<button
-  id="saveButton"
-  onclick="saveData()"
->
+<button id="saveButton"
+        onclick="saveData()">
+
   登録
+
 </button>
 
 
 <script>
+
+
+// ========================================
+// GAS WebアプリURL
+// ========================================
+
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbw-0Sxg0RJDsmUbntSCwcfLibbzH1D1u-rhWAryySAEIFWKnLlyfPwVx-N-u2IcyLfcGQ/exec";
+
+
+// ========================================
+// カメラ
+// ========================================
 
 let html5QrCode = null;
 
@@ -223,7 +242,7 @@ async function startCamera() {
 
 
 // ========================================
-// QR読み取り成功
+// QR読み取り
 // ========================================
 
 function onScanSuccess(decodedText) {
@@ -254,9 +273,7 @@ function onScanSuccess(decodedText) {
 
 
     if (id) {
-
       code = id;
-
     }
 
   }
@@ -275,7 +292,7 @@ function onScanSuccess(decodedText) {
     .innerText = code;
 
 
-  // 現在は仮表示
+  // 品名検索中
 
   document.getElementById("partName")
     .innerText = "品名を検索中…";
@@ -285,22 +302,118 @@ function onScanSuccess(decodedText) {
     .innerText = "読み取り成功";
 
 
-  // 数量欄を空にする
+  // 数量欄をクリア
 
   document.getElementById("quantity")
     .value = "";
 
 
-  // 数量入力へカーソル
+  // 品名検索
 
-  document.getElementById("quantity")
-    .focus();
+  lookupPart(code);
 
 }
 
 
 // ========================================
-// 登録ボタン
+// 品名検索
+// ========================================
+
+function lookupPart(code) {
+
+  const callbackName =
+    "jsonp_" + Date.now();
+
+
+  window[callbackName] =
+    function(data) {
+
+      // 後片付け
+
+      delete window[callbackName];
+
+
+      const script =
+        document.getElementById(callbackName);
+
+      if (script) {
+        script.remove();
+      }
+
+
+      // 検索結果
+
+      if (data.ok) {
+
+        document.getElementById("partName")
+          .innerText = data.partName;
+
+
+        document.getElementById("result")
+          .innerText = "品番を確認してください";
+
+
+        // 数量入力へ移動
+
+        document.getElementById("quantity")
+          .focus();
+
+      }
+      else {
+
+        document.getElementById("partName")
+          .innerText = "品名が見つかりません";
+
+
+        document.getElementById("result")
+          .innerText = "マスタに品番がありません";
+
+      }
+
+    };
+
+
+  const script =
+    document.createElement("script");
+
+
+  script.id =
+    callbackName;
+
+
+  script.src =
+    GAS_URL +
+    "?api=lookup" +
+    "&id=" +
+    encodeURIComponent(code) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror =
+    function() {
+
+      delete window[callbackName];
+
+      script.remove();
+
+      document.getElementById("partName")
+        .innerText = "検索エラー";
+
+      document.getElementById("result")
+        .innerText =
+          "Googleスプレッドシートに接続できません";
+
+    };
+
+
+  document.body.appendChild(script);
+
+}
+
+
+// ========================================
+// 登録
 // ========================================
 
 function saveData() {
@@ -317,7 +430,9 @@ function saveData() {
 
   if (code === "") {
 
-    alert("先にQRコードを読み取ってください");
+    alert(
+      "先にQRコードを読み取ってください"
+    );
 
     return;
 
@@ -326,14 +441,16 @@ function saveData() {
 
   if (quantity === "") {
 
-    alert("数量を入力してください");
+    alert(
+      "数量を入力してください"
+    );
 
     return;
 
   }
 
 
-  // 現在は仮登録
+  // 現在は登録テスト
 
   alert(
     "登録テスト\n\n" +
@@ -346,4 +463,5 @@ function saveData() {
 </script>
 
 </body>
+
 </html>

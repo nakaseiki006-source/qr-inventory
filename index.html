@@ -5,7 +5,7 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-  <title>QRカメラテスト</title>
+  <title>棚卸QR入力</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -14,12 +14,32 @@
       font-family: sans-serif;
       text-align: center;
       padding: 20px;
+      margin: 0;
+    }
+
+    h2 {
+      margin-bottom: 20px;
     }
 
     #reader {
       width: 100%;
       max-width: 500px;
       margin: 20px auto;
+    }
+
+    button {
+      width: 100%;
+      max-width: 500px;
+      padding: 15px;
+      font-size: 20px;
+      border: none;
+      border-radius: 8px;
+      background: #007bff;
+      color: white;
+    }
+
+    button:disabled {
+      background: #999;
     }
 
     #result {
@@ -32,41 +52,71 @@
 
 <body>
 
-<h2>QRカメラテスト</h2>
+<h2>棚卸QR入力</h2>
+
+<button id="startButton" onclick="startCamera()">
+  カメラを起動
+</button>
 
 <div id="reader"></div>
 
 <div id="result">
-  QRを読み取ってください
+  「カメラを起動」を押してください
 </div>
 
 <script>
 
-function onScanSuccess(decodedText) {
+let html5QrCode = null;
 
-  document.getElementById("result").innerText =
-    "読み取り成功！\n" + decodedText;
+async function startCamera() {
 
-}
+  const button = document.getElementById("startButton");
+  const result = document.getElementById("result");
 
-const scanner = new Html5QrcodeScanner(
-  "reader",
-  {
-    fps: 10,
-    qrbox: {
-      width: 250,
-      height: 250
-    }
-  },
-  false
-);
+  button.disabled = true;
 
-scanner.render(
-  onScanSuccess,
-  function(errorMessage) {
-    // 読み取り失敗は表示しない
+  result.innerText = "カメラを起動しています…";
+
+  try {
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    await html5QrCode.start(
+      {
+        facingMode: "environment"
+      },
+      {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+      },
+
+      function(decodedText) {
+
+        result.innerText =
+          "読み取り成功！\n\n" + decodedText;
+
+      },
+
+      function(errorMessage) {
+        // 読み取り失敗は表示しない
+      }
+    );
+
+    result.innerText =
+      "QRコードをカメラにかざしてください";
+
+  } catch (error) {
+
+    result.innerText =
+      "カメラを起動できませんでした。\n\n" +
+      error;
+
+    button.disabled = false;
   }
-);
+}
 
 </script>
 

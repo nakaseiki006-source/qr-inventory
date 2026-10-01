@@ -12,13 +12,13 @@
   <style>
     body {
       font-family: sans-serif;
-      text-align: center;
       padding: 20px;
       margin: 0;
+      font-size: 18px;
     }
 
     h2 {
-      margin-bottom: 20px;
+      text-align: center;
     }
 
     #reader {
@@ -27,25 +27,39 @@
       margin: 20px auto;
     }
 
+    .label {
+      margin-top: 15px;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    .display {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 20px;
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      min-height: 24px;
+    }
+
     button {
       width: 100%;
       max-width: 500px;
       padding: 15px;
       font-size: 20px;
+      margin-top: 15px;
       border: none;
       border-radius: 8px;
       background: #007bff;
       color: white;
     }
 
-    button:disabled {
-      background: #999;
-    }
-
     #result {
-      font-size: 20px;
-      margin-top: 20px;
-      word-break: break-all;
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -61,13 +75,33 @@
 <div id="reader"></div>
 
 <div id="result">
-  「カメラを起動」を押してください
+  QRコードを読み取ってください
 </div>
+
+<div class="label">
+  品番
+</div>
+
+<div id="partNo" class="display">
+</div>
+
+<div class="label">
+  品名
+</div>
+
+<div id="partName" class="display">
+</div>
+
 
 <script>
 
 let html5QrCode = null;
+let scanning = false;
 
+
+// ==============================
+// カメラ起動
+// ==============================
 async function startCamera() {
 
   const button = document.getElementById("startButton");
@@ -82,40 +116,93 @@ async function startCamera() {
     html5QrCode = new Html5Qrcode("reader");
 
     await html5QrCode.start(
+
       {
         facingMode: "environment"
       },
+
       {
         fps: 10,
+
         qrbox: {
           width: 250,
           height: 250
         }
       },
 
-      function(decodedText) {
-
-        result.innerText =
-          "読み取り成功！\n\n" + decodedText;
-
-      },
+      onScanSuccess,
 
       function(errorMessage) {
         // 読み取り失敗は表示しない
       }
+
     );
+
+    scanning = true;
 
     result.innerText =
       "QRコードをカメラにかざしてください";
 
-  } catch (error) {
+  }
+
+  catch (error) {
 
     result.innerText =
-      "カメラを起動できませんでした。\n\n" +
-      error;
+      "カメラを起動できませんでした";
 
     button.disabled = false;
+
   }
+}
+
+
+// ==============================
+// QR読み取り成功
+// ==============================
+function onScanSuccess(decodedText) {
+
+  if (!scanning) {
+    return;
+  }
+
+  // 連続読み取りを一旦停止
+  scanning = false;
+
+  let code = decodedText.trim();
+
+  // QRの中身がURLの場合
+  try {
+
+    const url = new URL(decodedText);
+
+    const id = url.searchParams.get("id");
+
+    if (id) {
+      code = id;
+    }
+
+  }
+  catch (e) {
+
+    // URLでなければそのまま品番として扱う
+
+  }
+
+
+  // 品番表示
+  document.getElementById("partNo").innerText = code;
+
+  // 今は仮表示
+  document.getElementById("partName").innerText =
+    "品名を検索中…";
+
+  document.getElementById("result").innerText =
+    "読み取り成功";
+
+
+  // 次の段階でここから
+  // Googleスプレッドシートを検索します
+
 }
 
 </script>

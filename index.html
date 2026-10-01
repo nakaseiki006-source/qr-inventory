@@ -10,6 +10,7 @@
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
+
     body {
       font-family: sans-serif;
       padding: 20px;
@@ -44,6 +45,15 @@
       min-height: 24px;
     }
 
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
     button {
       width: 100%;
       max-width: 500px;
@@ -56,11 +66,16 @@
       color: white;
     }
 
+    button:disabled {
+      background: #999;
+    }
+
     #result {
       text-align: center;
       margin-top: 15px;
       font-weight: bold;
     }
+
   </style>
 </head>
 
@@ -68,22 +83,25 @@
 
 <h2>棚卸QR入力</h2>
 
+
+<!-- カメラ起動 -->
+
 <button id="startButton" onclick="startCamera()">
   カメラを起動
 </button>
 
+
+<!-- QRカメラ -->
+
 <div id="reader"></div>
+
 
 <div id="result">
   QRコードを読み取ってください
 </div>
 
-<div class="label">
-  品番
-</div>
 
-<div id="partNo" class="display">
-</div>
+<!-- 品名 -->
 
 <div class="label">
   品名
@@ -93,27 +111,72 @@
 </div>
 
 
+<!-- 品番 -->
+
+<div class="label">
+  品番
+</div>
+
+<div id="partNo" class="display">
+</div>
+
+
+<!-- 数量 -->
+
+<div class="label">
+  数量
+</div>
+
+<input
+  type="number"
+  id="quantity"
+  inputmode="numeric"
+  min="0"
+  placeholder="数量を入力してください"
+>
+
+
+<!-- 登録 -->
+
+<button
+  id="saveButton"
+  onclick="saveData()"
+>
+  登録
+</button>
+
+
 <script>
 
 let html5QrCode = null;
+
 let scanning = false;
 
 
-// ==============================
+// ========================================
 // カメラ起動
-// ==============================
+// ========================================
+
 async function startCamera() {
 
-  const button = document.getElementById("startButton");
-  const result = document.getElementById("result");
+  const button =
+    document.getElementById("startButton");
+
+  const result =
+    document.getElementById("result");
+
 
   button.disabled = true;
 
-  result.innerText = "カメラを起動しています…";
+  result.innerText =
+    "カメラを起動しています…";
+
 
   try {
 
-    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode =
+      new Html5Qrcode("reader");
+
 
     await html5QrCode.start(
 
@@ -138,7 +201,9 @@ async function startCamera() {
 
     );
 
+
     scanning = true;
+
 
     result.innerText =
       "QRコードをカメラにかざしてください";
@@ -153,55 +218,128 @@ async function startCamera() {
     button.disabled = false;
 
   }
+
 }
 
 
-// ==============================
+// ========================================
 // QR読み取り成功
-// ==============================
+// ========================================
+
 function onScanSuccess(decodedText) {
 
   if (!scanning) {
     return;
   }
 
+
   // 連続読み取りを一旦停止
+
   scanning = false;
 
-  let code = decodedText.trim();
+
+  let code =
+    decodedText.trim();
+
 
   // QRの中身がURLの場合
+
   try {
 
-    const url = new URL(decodedText);
+    const url =
+      new URL(decodedText);
 
-    const id = url.searchParams.get("id");
+    const id =
+      url.searchParams.get("id");
+
 
     if (id) {
+
       code = id;
+
     }
 
   }
+
   catch (e) {
 
-    // URLでなければそのまま品番として扱う
+    // URLでなければ
+    // そのまま品番として扱う
 
   }
 
 
   // 品番表示
-  document.getElementById("partNo").innerText = code;
 
-  // 今は仮表示
-  document.getElementById("partName").innerText =
-    "品名を検索中…";
-
-  document.getElementById("result").innerText =
-    "読み取り成功";
+  document.getElementById("partNo")
+    .innerText = code;
 
 
-  // 次の段階でここから
-  // Googleスプレッドシートを検索します
+  // 現在は仮表示
+
+  document.getElementById("partName")
+    .innerText = "品名を検索中…";
+
+
+  document.getElementById("result")
+    .innerText = "読み取り成功";
+
+
+  // 数量欄を空にする
+
+  document.getElementById("quantity")
+    .value = "";
+
+
+  // 数量入力へカーソル
+
+  document.getElementById("quantity")
+    .focus();
+
+}
+
+
+// ========================================
+// 登録ボタン
+// ========================================
+
+function saveData() {
+
+  const code =
+    document.getElementById("partNo")
+      .innerText;
+
+
+  const quantity =
+    document.getElementById("quantity")
+      .value;
+
+
+  if (code === "") {
+
+    alert("先にQRコードを読み取ってください");
+
+    return;
+
+  }
+
+
+  if (quantity === "") {
+
+    alert("数量を入力してください");
+
+    return;
+
+  }
+
+
+  // 現在は仮登録
+
+  alert(
+    "登録テスト\n\n" +
+    "品番：" + code + "\n" +
+    "数量：" + quantity
+  );
 
 }
 

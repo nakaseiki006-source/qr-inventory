@@ -273,20 +273,6 @@
 </div>
 
 
-<!-- ========================================== -->
-<!-- QRカメラ -->
-<!-- ========================================== -->
-
-<div id="reader"></div>
-
-
-<button
-  id="startButton"
-  onclick="startCamera()">
-
-  カメラを起動
-
-</button>
 
 
 <!-- ========================================== -->
@@ -894,10 +880,6 @@ async function startCamera() {
 }
 
 
-// ==================================================
-// カメラ停止
-// ==================================================
-
 async function stopCamera() {
 
   if (
@@ -923,11 +905,17 @@ async function stopCamera() {
 
 
   cameraRunning = false;
-
   scanning = false;
 
-}
+  // カメラ起動ボタンを再び押せるようにする
+  const button =
+    document.getElementById("startButton");
 
+  if (button) {
+    button.disabled = false;
+  }
+
+}
 
 // ==================================================
 // QR読み取り成功

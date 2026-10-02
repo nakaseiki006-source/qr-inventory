@@ -76,7 +76,16 @@
     button:disabled {
       background: #999;
     }
+.button-row {
+  display: flex;
+  gap: 10px;
+  max-width: 500px;
+  margin: 0 auto;
+}
 
+.button-row button {
+  flex: 1;
+}
     #cancelButton {
       background: #777;
     }
@@ -125,32 +134,25 @@
 
 <div class="section">
 
-
 <!-- ========================================== -->
-<!-- 入力方法 -->
+<!-- QR入力 -->
 <!-- ========================================== -->
-
-<div class="label">
-  入力方法
-</div>
-
 
 <button
-  type="button"
-  onclick="startManualMode()">
+  id="startButton"
+  onclick="startCamera()">
 
-  手動で選択
+  QRで入力（カメラを起動）
 
 </button>
 
 
-<button
-  type="button"
-  onclick="startQRMode()">
+<!-- ========================================== -->
+<!-- QRカメラ -->
+<!-- ========================================== -->
 
-  QRコードで入力
+<div id="reader"></div>
 
-</button>
 
 
 <!-- ========================================== -->
@@ -223,32 +225,28 @@
   inputmode="numeric"
   min="0"
   placeholder="数量を入力してください">
+  
+<div class="button-row">
+
+  <button
+    id="saveButton"
+    onclick="saveData()">
+
+    登録
+
+  </button>
 
 
-<!-- ========================================== -->
-<!-- 登録 -->
-<!-- ========================================== -->
+  <button
+    id="nextButton"
+    onclick="nextItem()">
 
-<button
-  id="saveButton"
-  onclick="saveData()">
+    次へ
 
-  登録
+  </button>
 
-</button>
+</div>
 
-
-<!-- ========================================== -->
-<!-- 次へ -->
-<!-- ========================================== -->
-
-<button
-  id="nextButton"
-  onclick="nextItem()">
-
-  次へ
-
-</button>
 
 
 <!-- ========================================== -->
@@ -777,42 +775,10 @@ function nextItem() {
 }
 
 
-// ==================================================
-// 手動入力モード
-// ==================================================
-
-function startManualMode() {
-
-  inputMode = "manual";
 
 
-  stopCamera();
 
 
-  document.getElementById("result")
-    .innerText =
-    "大項目を選択してください";
-
-}
-
-
-// ==================================================
-// QR入力モード
-// ==================================================
-
-function startQRMode() {
-
-  inputMode = "qr";
-
-
-  document.getElementById("result")
-    .innerText =
-    "カメラを起動してください";
-
-
-  startCamera();
-
-}
 
 
 // ==================================================
